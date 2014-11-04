@@ -4,12 +4,12 @@ Site Transfer
 Transfer website from one environment to another.
 
 Currently working on these environment scenarios:
-          
+
                 TO
-            Prod  Test  Dev
-      Prod  [ ]   [x]   [ ]
-FROM  Test  [ ]   [ ]   [ ]
-      Dev   [ ]   [ ]   [ ]
+          Prod  Test  Dev
+    Prod  [ ]   [x]   [ ]
+    Test  [ ]   [ ]   [ ]
+    Dev   [ ]   [ ]   [ ]
 
 USAGE
 python C:\Python34\assettdev.py {1} {2} {3}
