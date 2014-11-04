@@ -7,9 +7,9 @@ Currently working on these environment scenarios:
 
                 TO
           Prod  Test  Dev
-    Prod  [ ]   [x]   [ ]
-    Test  [ ]   [ ]   [ ]
-    Dev   [ ]   [ ]   [ ]
+    Prod   -    [x]   [ ]
+    Test  [ ]   [ ]    - 
+    Dev    -    [ ]   [ ]
 
 USAGE
 python C:\Python34\assettdev.py {1} {2} {3}
