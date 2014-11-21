@@ -19,6 +19,8 @@
 #
 #   EXAMPLE
 #   C:\Python34\python sitetransfer.py phys username "multi word password"
+#
+#   
 
 import os
 import shutil
@@ -64,6 +66,8 @@ def main():
     if table_name:
         create_user(table_name, mysql_creds)
         update_database(target, target_dir, table_name, mysql_creds)
+    run_drush(target_dir)
+    log("assettdev.py completed.")
 
 
 # Print a message to the terminal that includes the current time and message
@@ -78,11 +82,21 @@ def randpass():
     proc = subprocess.Popen("php {} -randpass {}".format(PROTEUS_PHP, PASSWORD_LENGTH), stdout=subprocess.PIPE)
     return proc.stdout.read().decode('ascii').rstrip()[15:]
 
+
 # Execute Proteus (PROTEUS_PHP) on directory DEVELOPMENT_DIR to change passwords and setup setting.php file
-def run_proteus():
+def run_proteus_default():
+    # Run Proteus with -default flag
     os.chdir(PROTEUS_DIR)
     proc = subprocess.Popen("php {} -default {}".format(PROTEUS_PHP, DEVELOPMENT_DIR), stdout=subprocess.PIPE)
-    return proc.stdout.read().decode('ascii')
+    log(proc.stdout.read().decode('ascii'))
+
+
+# Execute Proteus (PROTEUS_PHP) with -adminpass flag followed by passmove.cmd
+def run_proteus_admin():
+    # Run Proteus with -adminpass flag
+    os.chdir(PROTEUS_DIR)
+    proc = subprocess.Popen("php {} -adminpass".format(PROTEUS_PHP), stdout=subprocess.PIPE)
+    log(proc.stdout.read().decode('ascii'))
 
 
 def treecopy_ignore(dir, files):
@@ -95,9 +109,9 @@ def mirror_web_dir(target, target_dir):
     prod_dir = os.path.normpath(PRODUCTION_DIR + '/' + target_dir)
     dev_dir = os.path.normpath(DEVELOPMENT_DIR + '/' + target)
 
-    print("Starting mirror process...");
+    log("Starting mirror process...");
     proc = subprocess.Popen("php mirrordir.php {} {} {}".format(drupal_dir, prod_dir, dev_dir), stdout=subprocess.PIPE)
-    print(proc.stdout.read().decode('ascii'))
+    log(proc.stdout.read().decode('ascii'))
 
 
 # Import the target db dump into the test sql database (Objective #2)
@@ -200,12 +214,29 @@ def update_database(target, old_domain, table_name, mysql_creds):
     out, err = out.decode('ascii'), err.decode('ascii')
     
     # Uncomment these lines to print output of srdb.cli.php
-    log("Output: {}\n".format(out))
-    log("Error: {}\n".format(err))
+    #log("Output: {}\n".format(out))
+    #log("Error: {}\n".format(err))
 
     log("update_database completed.")
 
-    print(run_proteus())
+    run_proteus_default()
+    run_proteus_admin()
+
+
+def run_drush(target_dir):
+    # Check if directory is a Drupal website
+    if os.path.islink(os.path.normpath(PRODUCTION_DIR + '/' + target_dir + '/includes')) and os.path.islink(os.path.normpath(PRODUCTION_DIR + '/' + target_dir + '/modules')):
+        log("Drupal detected. Running drush.")
+        os.chdir(SCRIPT_DIR)
+        proc = subprocess.Popen("php drush.php", stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+        out, err = proc.communicate()
+        out, err = out.decode('ascii'), err.decode('ascii')
+
+        if len(out):
+            log("Output: {}\n".format(out))
+        if len(err):
+            log("Error: {}\n".format(err))
 
 
 # Start the program
