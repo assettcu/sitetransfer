@@ -58,9 +58,9 @@ try {
 		$source = $argv[2];
 		$dest = $argv[3];
 
-		echo $argv[1] . "\n";
-		echo $argv[2] . "\n";
-		echo $argv[3] . "\n\n";
+		//echo $argv[1] . "\n";
+		echo "Source: " . $argv[2] . "\n";
+		echo "Destination: " . $argv[3] . "\n\n";
 		
 		if(is_dir($dest)) {
 			echo "Directory already exists. Deleting directory before copying new files... ";

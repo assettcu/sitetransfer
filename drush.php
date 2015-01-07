@@ -3,7 +3,7 @@ $ch = curl_init();
 
 curl_setopt_array($ch, array(
     CURLOPT_RETURNTRANSFER => 1,
-    CURLOPT_URL => "http://assetttest.colorado.edu/drushrunner.php",
+    CURLOPT_URL => "http://assetttest.colorado.edu/drushrunner.php?site=" . $argv[1],
 ));
 $output = curl_exec($ch);
 curl_close($ch);

@@ -18,7 +18,7 @@
 #       3. Assettdev MySQL database password (put in quotes is there are spaces)
 #
 #   EXAMPLE
-#   C:\Python34\python sitetransfer.py phys username "multi word password"
+#   C:\Python34\python C:\Python34\sitetransfer\sitetransfer.py phys username "multi word password"
 #
 #   
 
@@ -36,6 +36,7 @@ DEVELOPMENT_DIR = os.path.normpath("//assettdev.colorado.edu/web$/assetttest.col
 PROTEUS_DIR     = os.path.normpath("//assettdev.colorado.edu/c$/proteus/")
 PROTEUS_PHP     = os.path.normpath("//assettdev.colorado.edu/c$/proteus/proteus.php")
 DB_BACKUP_DIR   = os.path.normpath("//olympic.colorado.edu/c$/db backup/")
+MIRRORDIR_PATH  = os.path.normpath("//olympic.colorado.edu/c$/Python34/sitetransfer/mirrordir.php")
 MYSQL_DIR       = os.path.normpath("//olympic.colorado.edu/c$/Program Files/MySQL/MySQL Server 5.1/bin/")
 MYSQL_HOST      = "assettdev.colorado.edu"
 ASSETTTEST_URL  = "assetttest.colorado.edu"
@@ -66,7 +67,8 @@ def main():
     if table_name:
         create_user(table_name, mysql_creds)
         update_database(target, target_dir, table_name, mysql_creds)
-    run_drush(target_dir)
+    run_drush(target_dir, target)
+    run_callpermalink(target)
     log("assettdev.py completed.")
 
 
@@ -110,7 +112,7 @@ def mirror_web_dir(target, target_dir):
     dev_dir = os.path.normpath(DEVELOPMENT_DIR + '/' + target)
 
     log("Starting mirror process...");
-    proc = subprocess.Popen("php mirrordir.php {} {} {}".format(drupal_dir, prod_dir, dev_dir), stdout=subprocess.PIPE)
+    proc = subprocess.Popen("php {} {} {} {}".format(MIRRORDIR_PATH, drupal_dir, prod_dir, dev_dir), stdout=subprocess.PIPE)
     log(proc.stdout.read().decode('ascii'))
 
 
@@ -143,14 +145,14 @@ def mirror_db(target, mysql_creds):
         log("Attemping import of {} dump to {}.".format(dbfile, MYSQL_HOST))
         input = open(os.path.normpath(dbfile))
         mysql_bin = os.path.normpath(MYSQL_DIR + '/' + 'mysql')
-        mysql_args = [mysql_bin, "--host=%s" % MYSQL_HOST, "--user=%s" % mysql_creds.get('user'), "--password=%s" % mysql_creds.get('pass')]
+        mysql_args = [mysql_bin, "--host=%s" % MYSQL_HOST, "--user=%s" % mysql_creds.get('user'), "--password=%s" % mysql_creds.get('pass'), "--max_allowed_packet=1073741824"]
 
         proc = subprocess.Popen(mysql_args, stdin=input, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err = proc.communicate()
         out, err = out.decode('ascii'), err.decode('ascii')
 
         if len(err):
-            log("Failed to import db dump. Error: {}".format(err.decode('ascii')))
+            log("Failed to import db dump. Error: {}".format(err))
         else:
             log("Successfully imported db dump to {}.".format(MYSQL_HOST))
 
@@ -169,8 +171,8 @@ def create_user(table_name, mysql_creds):
     log("Password: {}".format(password))
 
     # Truncate the username if it's longer than 14 chars
-    if len(user) > 14:
-        user = user[:14]
+    if len(user) > 16:
+        user = user[:16]
 
     # SQL commands to be executed on the database
     # These commands delete an existing user if it exists and then 
@@ -223,12 +225,12 @@ def update_database(target, old_domain, table_name, mysql_creds):
     run_proteus_admin()
 
 
-def run_drush(target_dir):
+def run_drush(target_dir, target):
     # Check if directory is a Drupal website
     if os.path.islink(os.path.normpath(PRODUCTION_DIR + '/' + target_dir + '/includes')) and os.path.islink(os.path.normpath(PRODUCTION_DIR + '/' + target_dir + '/modules')):
         log("Drupal detected. Running drush.")
         os.chdir(SCRIPT_DIR)
-        proc = subprocess.Popen("php drush.php", stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        proc = subprocess.Popen("php drush.php {}".format(target), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         out, err = proc.communicate()
         out, err = out.decode('ascii'), err.decode('ascii')
@@ -237,6 +239,23 @@ def run_drush(target_dir):
             log("Output: {}\n".format(out))
         if len(err):
             log("Error: {}\n".format(err))
+
+
+def run_callpermalink(target):
+    log("Running callpermalink")
+    os.chdir(SCRIPT_DIR)
+    log(target)
+    call = "php callpermalink.php assetttest.colorado.edu/{} \"/%postname%/\"".format(target)
+    log(call)
+    proc = subprocess.Popen(call, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+    out, err = proc.communicate()
+    out, err = out.decode('ascii'), err.decode('ascii')
+
+    if len(out):
+        log("Output: {}\n".format(out))
+    if len(err):
+        log("Error: {}\n".format(err))
 
 
 # Start the program
